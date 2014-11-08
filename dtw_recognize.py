@@ -3,7 +3,7 @@
 # @Author: ziyuanliu
 # @Date:   2014-11-06 15:12:42
 # @Last Modified by:   ziyuanliu
-# @Last Modified time: 2014-11-08 10:55:28
+# @Last Modified time: 2014-11-08 12:13:19
 from sys import argv
 import sys
 from collections import defaultdict
@@ -14,11 +14,9 @@ from numpy import array, zeros, argmin, inf
 from numpy.linalg import norm
 import operator
 import traceback 
-import scikits.talkbox
-import wave
+from scikits.talkbox.features import mfcc
+from scikits.audiolab import wavread
 
-trainingMFCC = None
-testingMFCC = None
 
 class MFCC(object):
 	"""docstring for MFCC"""
@@ -171,18 +169,22 @@ def readwav(trainfolder,testfolder):
 	os.chdir(trainfolder)
 	for f in glob.glob("*.wav"):
 		speaker,letter,_ = f.split('.')[0].split('-')
-		fd = wave.open(f)
-		n = fd.getnframes()
-		fs = fd.getframerate()
-		frames = fd.readframes(n)
-		print scikits.talkbox.features.mfcc(frames, fs=fs, nwin=0.025)
+		mfccname = f.split('.')[0]+".mfc"
+		data, fs = wavread(f)[:2]
+
+		cep= mfcc(data, fs=fs, nwin=int(fs*0.025))[0]
+		np.savetxt(mfccname,cep,fmt='%.10f')
+		
 
 
 	os.chdir(testfolder)
 	for f in glob.glob("*.wav"):
 		speaker,letter,_ = f.split('.')[0].split('-')
-		# with wave.open(f) as fd:
-		# 	print fd
+		mfccname = f.split('.')[0]+".mfc"
+		data, fs = wavread(f)[:2]
+
+		cep= mfcc(data, fs=fs, nwin=int(fs*0.025))[0]
+		np.savetxt(mfccname,cep,fmt='%.10f')
 	
 
 if __name__ == '__main__':
@@ -191,20 +193,21 @@ if __name__ == '__main__':
 	testfolder = foldername+"/test/"
 	trainfolder = foldername+"/train/"
 
-	readwav(trainfolder,testfolder)
-	# global trainingMFCC,testingMFCC
-	# trainingMFCC,testingMFCC = readmfcc(trainfolder,testfolder)
-	
-	# import multiprocessing
+	# readwav(trainfolder,testfolder)
 
-	# p = multiprocessing.Pool(8)
-	# try:
-	# 	p.map_async(multiprocess_knn, testingMFCC.words.keys(), callback=finished_knn)
-	# 	p.close()
-	# 	p.join()
-	# except Exception as e:
-	# 	traceback.print_exc(e)
-	# 	print e
+	global trainingMFCC,testingMFCC
+	trainingMFCC,testingMFCC = readmfcc(trainfolder,testfolder)
+	
+	import multiprocessing
+
+	p = multiprocessing.Pool(8)
+	try:
+		p.map_async(multiprocess_knn, testingMFCC.words.keys(), callback=finished_knn)
+		p.close()
+		p.join()
+	except Exception as e:
+		traceback.print_exc(e)
+		print e
 
 
 
