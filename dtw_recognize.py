@@ -3,7 +3,11 @@
 # @Author: ziyuanliu
 # @Date:   2014-11-06 15:12:42
 # @Last Modified by:   ziyuanliu
-# @Last Modified time: 2014-11-08 12:13:19
+# @Last Modified time: 2014-11-10 15:11:53
+
+
+#TEAM: ZIYUAN LIU && PETER LOOMIS
+
 from sys import argv
 import sys
 from collections import defaultdict
@@ -17,6 +21,7 @@ import traceback
 from scikits.talkbox.features import mfcc
 from scikits.audiolab import wavread
 
+k = 4
 
 class MFCC(object):
 	"""docstring for MFCC"""
@@ -34,57 +39,6 @@ class MFCC(object):
 				key = '#'.join([k1,k2])
 				model[key]=md[k1][k2]
 		return model
-
-	def dtw(self,speaker,word,testword):
-		model = self.model[speaker][word]
-
-		previous_row = [float('inf') for i in testword]
-		previous_row.insert(0,0)
-
-		for i, c1 in enumerate(model):
-			current_row = [float('inf')]
-			for j, c2 in enumerate(testword):
-				sub_cost = np.linalg.norm(c2-c1,ord=1)
-				# print c2,c1,sub_cost
-				prev_min = min(previous_row[j],current_row[j],previous_row[j+1])
-				current_row.append(sub_cost+prev_min)
-				
-			previous_row = current_row
-		return previous_row[-1]
-
-	@classmethod
-	def knn(cls,training,testing,k=3):
-		retval = defaultdict(dict)
-		for testingspk in testing.speakers:
-			for testingword in testing.alphabets:
-
-				wrd = []
-
-				for trainingspk in training.speakers:
-					for trainingword in training.alphabets:
-						dtw = training.dtw(trainingspk,trainingword,testing.model[testingspk][testingword])
-						wrd.append(('#'.join([trainingspk,trainingword]),dtw))
-				ordered = sorted(wrd,key=lambda x: x[1])
-				retval[testingspk][testingword]=ordered[:k]
-				print "processed",testingword
-			# 	break
-			# break
-		return retval
-				
-	@classmethod
-	def hypothesize(cls,testresult):
-		correct = 0
-		for spk in testresult.keys():
-			for word in testresult[spk].keys():
-				ctr = defaultdict(int)
-				for key,dtw in testresult[spk][word]:
-					speaker, word = key.split('#')
-					ctr[word]+=1
-				max_key = max(ctr.iteritems(), key=operator.itemgetter(1))[0]
-				print "hypothesis for ",word,'is',max_key,'correct?:',word==max_key
-				if word==max_key:
-					correct +=1
-		print "accuracy is",float(correct)/len(testresult.keys())*len(testresult[testresult.keys()[0]].keys())
 
 def dtw(model,testword):
 	previous_row = [float('inf') for i in model]
@@ -115,7 +69,7 @@ def multiprocess_knn(word):
 	ordered = sorted(wrd,key=lambda x: x[1])
 	print "processed",testword
 	sys.stdout.flush()
-	return {word:ordered[:3]}
+	return {word:ordered[:k]}
 
 def finished_knn(args):
 	correct = 0
