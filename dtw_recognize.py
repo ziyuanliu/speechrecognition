@@ -3,7 +3,7 @@
 # @Author: ziyuanliu
 # @Date:   2014-11-06 15:12:42
 # @Last Modified by:   ziyuanliu
-# @Last Modified time: 2014-11-10 15:11:53
+# @Last Modified time: 2014-11-10 15:42:57
 
 
 #TEAM: ZIYUAN LIU && PETER LOOMIS
@@ -20,8 +20,9 @@ import operator
 import traceback 
 from scikits.talkbox.features import mfcc
 from scikits.audiolab import wavread
+import math
 
-k = 4
+k = 3
 
 class MFCC(object):
 	"""docstring for MFCC"""
@@ -43,12 +44,12 @@ class MFCC(object):
 def dtw(model,testword):
 	previous_row = [float('inf') for i in model]
 	previous_row.insert(0,0)
-
+	norm = np.linalg.norm
 	for i, c1 in enumerate(testword):
 		current_row = [float('inf')]
 		for j, c2 in enumerate(model):
-			sub_cost = np.linalg.norm(c2-c1,ord=1)
-			# print c2,c1,sub_cost
+			sub_cost = norm(c1-c2)
+			# sub_cost = normalize(c1-c2)
 			prev_min = min(previous_row[j],current_row[j],previous_row[j+1])
 			current_row.append(sub_cost+prev_min)
 			
@@ -86,7 +87,7 @@ def finished_knn(args):
 		print "hypothesis for ",word,'is',max_key,'correct?:',word==max_key,ctr
 		if word==max_key:
 			correct +=1
-	print "accuracy is",float(correct)/len(args)
+	print "accuracy is",(float(correct)/len(args))*100
 
 def readmfcc(training,testing):
 	trainingdict = defaultdict(dict)
